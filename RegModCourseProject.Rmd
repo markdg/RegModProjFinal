@@ -1,0 +1,162 @@
+---
+title: "Investigation of Mileage versus Transmission Type in the mtcars Dataset"
+author: "Mark George"
+date: "06/19/2015"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Executive Summary
+
+This study investigates the influence of transmission type on the miles per gallon (MPG) of the cars in the mtcars dataset. The investigation revealed that there is a very strong effect of transmission type with cars with automatic transmissions having a significantly lower MPG. However, vehicles with automatic transmissions in the dataset have significantly higher weight than those with manual transmissions. They also have larger more powerful engines, determined by displacement and horsepower variables, which would explain at least some of the weight difference. The reason for extra weight and larger engines cannot be determined from the dataset, the question being are larger engines and extra weight required for cars with automatic transmissions or are they chosen for marketing reasons such as appeal of a more luxury and higher performance. Thus we can say that cars with automatic transmissions get lower MPG than those with manual but it is because they are heavier.
+
+The Rmarkdown for this reported is located at https://github.com/markdg/RegModProjFinal.
+
+## Interpretation of Coefficients
+
+Three models were developed. Their coefficients are interpretted as follows.
+
+Model 1 is a linear regression fit with transmission type (variable *am* in the dataset) as the regressor and miles per gallon (variable *mpg* in the dataset) as the response, ignoring all other variables. The coefficients are shown in Figure 3a. The intercept predicts 17.15 MPG for cars with automatic transmissions. That is the mean MPG for cars with automatic transmissions as one would expect. The slope coefficient predicts a 7.24 MPG increase for moving to manual transmission. This is as expected since 17.15 + 7.24 = 24.39 which is the mean MPG for cars with manual transmissions. Both are significant since p-values are very small (much less than 0.05). The r-squared value for model 1 (from Figure 3b) is 0.36. That is not a very strong indication that the model explains the variance well.
+
+Model 2 uses transmission type as the regressor adjusted for weight (variable *wt* in the dataset). The coefficients are shown in Figure 4a. Adjusted for weight the coefficients change dramatically. The new intercept of 37.32 would correspond to the MPG of a car with automatic transmission and zero weight, hence not very meaningful. Of greater interest is that when adjusted for weight the transmission type has virtually no effect on MPG, as indicated by a very small slope coefficient of -0.02. And in fact it is not significant, with a p-value of 0.988 which would indicate any effect of transmission type is likely due to chance if weight is included. The weight coefficient predicts a -5.35 MPG decrease for every 1000 pound weight increase. And it is significant, with a p-value of 1.87e-07. The r-squared value for model 2 (from Figure 4b) is 0.75 which is a significantly higer indication that the model explains the variance well.
+
+Model 3 uses transmission type as the regressor adjusted for weight and a transmission*weight interaction variable. The coefficients are shown in Figure 5a. The r-squared value for model 3 is 0.83 which is an even better indication of the model explaining variance well than model 2.
+
+## Exploratory Data Analysis
+
+Exploratory data analysis began with a look at transmission type versus mileage which shows that cars with automatic transmissions have significantly lower mileage (Figure 1 in Appendix). But as earlier work with the mtcars dataset revealed, mileage is also affected by weight. We find that the cars equipped with automatic transmissions are heavier than those with manual (Figure 2 in Appendix). The mean weight of cars with automatic transmission is `r round(mean(mtcars$wt[mtcars$am==0]), 2)` thousand pounds while the mean weight of manual transmission cars is `r round(mean(mtcars$wt[mtcars$am==1]), 2)` thousand pounds. Not only are the mean weights of automatic and manual transmission cars significantly different, the variance of their weights is quite narrow. So the weight difference is consistent across the dataset. 
+
+Applying some domain knowledge one can see that other variables such as *hp*, *disp* and *cyl* would be correlated with *wt* since they indicate larger and more powerful engines. They would provide little is any additional benefit to the model so are not considered.
+
+## Models and Selection Criteria
+
+Exploratory data analysis led to focusing on transmission type and weight as the regressors in a linear regression model of mileage versus transmission type. Three models were fit to demonstrate and analyzed for their accuracy.
+
+Model 1 fits *mpg* with *am* as the regressor, ignoring other variables. Model 2 fits *mpg* with *am* adjusted for *wt*. Model 3 fits *mpg* and *am* adjusted for *wt* and an interaction variable *am* X *wt*. As discussed above in the Interpretation of Coefficients section, Model 3 does the best job of explaining MPG variance across the dataset so it is selected as the appropriate model for further analysis.
+
+## Regarding the Questions of Interest
+
+The two questions of interest are:  
+1. Is an automatic or manual transmission better for MPG?  
+2. Quantify the MPG difference between automatic and manual transmissions.
+
+Question 1 cannot be answered definitively based on the mtcars dataset. While it is true that the cars with automatic transmissions have lower MPG, their weight is also greater. If the greater weight is because automatic transmissions require bigger engines, or if it is simply because automatic transmissions and bigger engines are sold together for marketing purposes is not answered by the dataset.
+
+Question 2 can be answered, subject to the caveat that it is the added weight of cars with automatic transmissions that is the driving factor in MPG changes. Under that condition, we can say that a car equipped with automatic transmission will get approximately 7.24 MPG less than a car with manual transmission.
+
+## Quantification of Uncertainty
+
+### Residuals
+
+Model 3 achieves the best results so residuals were plotted for it in Figure 6. The residuals actually look rather large.
+
+### Diagnostics
+
+The 10 largest and 10 smallest hatvalues for Model 3 are shown in Figures 7a and 7b, respectively. The hatvalues are kind of medium in magnitude but the largest is only 7 times the smallest and none particularly stand out as having extreme leverage.
+
+The 10 largest dfbetas for Model 3 are shown in Figure 8. Again there is no indication of a particularly large effect of removing any single point.
+
+\pagebreak
+  
+# Appendix
+
+## Exploratory Data Analysis
+
+```{r Figure1, echo=FALSE, fig.height=4, fig.width=5}
+# First some exploratory analysis of the data with some simple box plots.
+data(mtcars)
+boxplot(mpg ~ am, data=mtcars, main='Figure 1 - MPG vs Transmission Type', xlab='Transmission (0=auto, 1=manual)', ylab='MPG')
+# The box plots show a very clear distinction between automatic and manual transmissions. Auto has a substantially lower mean and narrower variance than manual.
+```
+
+```{r Figure2, echo=FALSE, fig.height=4, fig.width=5}
+# Now consider if there are confounding variables that could influence the comparison. For example, perhaps the data in the dataset for cars with automatic transmissions comes from cars that are much heavier than those with manual transmissions. In earlier work we found that weight had a significant impact on mileage. So we take a look at mileage versus weight.
+
+boxplot(wt ~ am, data=mtcars, main='Figure 2 - Weight vs Transmission Type', xlab='Transmission (0=auto, 1=manual)', ylab='Weight (x1000 lbs)')
+
+# Indeed. We see that the data for automatic transmission mileage comes from cars that are predominantly heavier than those with manual transmission. The mean weight of cars with automatic transmission is `r round(mean(mtcars$wt[mtcars$am==0]), 2)` thousand pounds while the mean weight of manual transmission cars is `r round(mean(mtcars$wt[mtcars$am==1]), 2)` thousand pounds.
+
+
+# This observation raises the question, does the extra weight of cars equipped with automatic transmissions come from the transmission or from something else such as a bigger engine. We have insufficient data to answer that question. But for modeling purposes we may want to include an interaction variable between am and wt in the regression model.
+```
+
+## Models and Coefficients
+
+```{r echo=FALSE}
+# Exploratory data analysis identified a set of variables that makes sense to include in a linear regression model of mileage versus transmission type. Now fit three models to demonstrate the improvement of adding wt and a am:wt interaction variable.
+
+fit1 <- lm(mtcars$mpg ~ mtcars$am)
+fit2 <- lm(mtcars$mpg ~ mtcars$am + mtcars$wt)
+fit3 <- lm(mtcars$mpg ~ mtcars$am + mtcars$wt + I(mtcars$am * mtcars$wt))
+```
+
+### **Figure 3a: Model 1 Coefficients and P-values**
+```{r Figure3a, echo=FALSE}
+summary(fit1)$coef
+
+# The intercept predicts 17.15 mpg for cars with automatic transmissions since am == 0 at that point. And that is in fact the mean mpg for cars with automatic transmissions. The slope coefficient predicts a 7.24 mpg increase for moving to manual transmission. This is as expected since 17.15 + 7.24 = 24.39 which is the mean mpg for cars with manual transmissions. Both are significant since p-values are very small (much less than 0.05).
+```
+
+### **Figure 3b: Model 1 R-squared**
+```{r Figure3b, echo=FALSE}
+summary(fit1)$r.squared
+```
+
+### **Figure 4a: Model 2 Coefficients and P-values**
+```{r Figure4b, echo=FALSE}
+summary(fit2)$coef
+
+# Adjusted for weight our coefficients change dramatically. Now we see an intercept of 37.32 which would correspond to the mpg of a car with automatic transmission and zero weight, hence not very meaningful. Of greater interest is that when adjusted for weight the transmission type has virtually no effect on mpg. And in fact it is not significant, with a p-value of 0.988 which would indicate any effect of transmission type is almost certainly due entirely to chance.
+```
+
+### **Figure 4b: Model 2 R-squared**
+```{r Figure4a, echo=FALSE}
+summary(fit2)$r.squared
+```
+
+###**Figure 5a: Model 3 Coefficients and P-values**
+```{r Figure5a, echo=FALSE}
+summary(fit3)$coef
+
+# It is weight that is important. The weight coefficient predicts a -5.35 mpg decrease for every 1000 pound weight increase. And it is significant, with a p-value of 1.87e-07.
+```
+
+###**Figure 5b: Model 3 R-squared**
+```{r Figure5b, echo=FALSE}
+summary(fit3)$r.squared
+```
+
+\pagebreak
+
+## Residuals and Diagnostics
+
+## Residuals
+
+```{r Figure6, echo=FALSE, fig.height=4, fig.width=5}
+#Model 3 is the meaningful model so its residuals are explored.
+
+plot(predict(fit3), resid(fit3), main='Figure 6: Residuals for Model 3')
+
+# Residuals seem kind of large in the plot.
+```
+
+## Influence
+
+###**Figure 7a: 10 Largest hatvalues for Model 3 Sorted Decreasing**
+```{r Figure7a, echo=FALSE}
+sort(hatvalues(fit3), decreasing=TRUE)[1:10]
+```
+
+###**Figure 7b: 10 Smallest hatvalues for Model 3 Sorted Increasing**
+```{r Figure7b, echo=FALSE}
+sort(hatvalues(fit3))[1:10]
+
+# The hatvalues are kind of medium in magnitude but the largest is only 7 times the smallest.
+```
+###**Figure 8: 10 Largest dfbetas for Model 3 Sorted Decreasing**
+```{r Figure8, echo=FALSE}
+sort(dfbetas(fit3), decreasing=TRUE)[1:10]
+
+# No points in model 3 have particularly large influence. The hatvalues are all small and dfbetas indicate there is little change in coefficient values for any points that are omitted.
+```
